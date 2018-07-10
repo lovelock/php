@@ -17,6 +17,8 @@ ENV PHPIZE_DEPS \
 		libc-dev \
 		make \
 		pkgconf \
+		libpng-dev \
+		libgd \
 		re2c
 
 # persistent / runtime deps
@@ -104,6 +106,11 @@ RUN set -xe \
 		libsodium-dev \
 		libxml2-dev \
 		sqlite-dev \
+        openldap-dev \
+        autoconf \
+        gcc \
+        glib-dev \
+        musl-dev \
 	\
 	&& export CFLAGS="$PHP_CFLAGS" \
 		CPPFLAGS="$PHP_CPPFLAGS" \
@@ -132,9 +139,13 @@ RUN set -xe \
 		--with-sodium=shared \
 		\
 		--with-curl \
+        --enable-zip \
 		--with-libedit \
 		--with-openssl \
 		--with-zlib \
+		--with-gd \
+        --with-pdo-mysql \
+        --with-ldap \
 		\
 # bundled pcre does not support JIT on s390x
 # https://manpages.debian.org/stretch/libpcre3-dev/pcrejit.3.en.html#AVAILABILITY_OF_JIT_SUPPORT
@@ -147,6 +158,16 @@ RUN set -xe \
 	&& make clean \
 	&& cd / \
 	&& docker-php-source delete \
+    && wget https://github.com/phpredis/phpredis/archive/4.0.0.tar.gz \
+    && tar xzvf 4.0.0.tar.gz \
+    && cd phpredis-4.0.0 \
+    && phpize \
+    && ./configure \
+    && make \
+    && make install \
+    && echo 'extension=redis.so' > /usr/local/etc/php/conf.d/redis.ini \
+    && rm -rf 4.0.0.tar.gz phpredis-4.0.0 \
+
 	\
 	&& runDeps="$( \
 		scanelf --needed --nobanner --format '%n#p' --recursive /usr/local \
